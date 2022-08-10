@@ -6,6 +6,7 @@ contract Web3RSVP {
     event NewEventCreated(
         bytes32 eventID,
         address creatorAddress,
+        uint256 eventTimestamp,
         uint256 maxCapacity,
         uint256 deposit,
         string eventDataCID
@@ -37,7 +38,7 @@ contract Web3RSVP {
         uint256 maxCapacity,
         string calldata eventDataCID
     ) external {
-        //generate an eventID based on other things passed in to generate a hash
+        // generate an eventID based on other things passed in to generate a hash
         bytes32 eventId = keccak256(
             abi.encodePacked(
                 msg.sender,
@@ -45,36 +46,34 @@ contract Web3RSVP {
                 eventTimestamp,
                 deposit,
                 maxCapacity
-            )
-        //make sure this id isn't already claimed
-        require (idToEvent[eventId].eventTimestamp == 0, "ALREADY REGISTERED")
+            )        
         );
 
         address[] memory confirmedRSVPs;
         address[] memory claimedRSVPs;
     
-    //this creates a new CreateEvent struct and addits it to the idToEvent mapping
-    idToEvent[eventId] = CreateEvent(
-        eventId,
-        eventDataCID,
-        msg.sender,
-        eventTimestamp,
-        deposit,
-        maxCapacity,
-        confirmedRSVPs,
-        claimedRSVPs,
-        false
-    
-    emit NewEventCreated(
-        eventId,
-        msg.sender,
-        eventTimestamp,
-        maxCapacity,
-        deposit,
-        eventDataCID
-    );
+        // this creates a new CreateEvent struct and addits it to the idToEvent mapping
+        idToEvent[eventId] = CreateEvent(
+            eventId,
+            eventDataCID,
+            msg.sender,
+            eventTimestamp,
+            deposit,
+            maxCapacity,
+            confirmedRSVPs,
+            claimedRSVPs,
+            false
+        );
 
-    );
+        emit NewEventCreated(
+            eventId,
+            msg.sender,
+            eventTimestamp,
+            maxCapacity,
+            deposit,
+            eventDataCID
+        );
+    
     }
     
     function createNewRSVP(bytes32 eventId) external payable {
@@ -109,7 +108,7 @@ contract Web3RSVP {
         CreateEvent storage myEvent = idToEvent[eventId];
 
         //require that msg.sender is the owner of the event - only the host should be able to check people in
-        require(msg.sender == mEvent.eventOwner, "NOT AUTHORIZED");
+        require(msg.sender == myEvent.eventOwner, "NOT AUTHORIZED");
 
         //require that attendee trying to check in actually RSVP'd
         address rsvpConfirm;
@@ -140,7 +139,7 @@ contract Web3RSVP {
 
         //if this fails, remove the user from the array of claimed RSVPs
         if (!sent) {
-            myEvent.claimedRSVPspop();
+            myEvent.claimedRSVPs.pop();
         }
 
         require(sent, "Failed to send Ether");
